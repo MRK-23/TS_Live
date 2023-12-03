@@ -1,3 +1,26 @@
+/* async function mockGetAirQualityData(url){
+
+      const sensor_71550 = '[{}]';
+      const sensor_71551 = '[{}]';
+
+      return new Promise((resolve, reject) => {
+        if (url.includes('71550')){
+          const p = JSON.parse('sensor_71550');
+          resolve(p);
+          return;
+        }
+        if (url.includes('71551')){
+          const p = JSON.parse('sensor_71551');
+          resolve(p);
+          return;
+        }
+
+        reject(new Error('id not found'));
+
+      })
+
+    }*/
+
 async function getAirQualityData(url) {
     const response = await fetch(url);
     const status = response.ok
@@ -16,27 +39,29 @@ const p = Promise.all(promises);
 
 class AirQualityData {
     constructor(dataSnapshots, location) {
-        //@ts-ignore
         this.dataSnapshots = dataSnapshots;
-        //@ts-ignore
         this.location = location;
     }
 
-    location = {}
-    dataSnapshots = []
+    // location = {}
+    // dataSnapshots = []
+
+    dataSnapshots: any;
+    location: AirQualityDataLocation;
 }
 
 class AirQualityDataLocation {
-    constructor(lat, lng, country, placeId) {
-        //@ts-ignore
+    constructor(lat: number, lng: number, country: string, placeId: number) {
         this.lat = lat;
-        //@ts-ignore
         this.lng = lng;
-        //@ts-ignore
         this.country = country;
-        //@ts-ignore
         this.placeId = placeId;
+
     }
+    lat:number;
+    lng:number;
+    country:string;
+    placeId:number;
 }
 
 function getAirQualityDataSnapshot(firstApiResponse, secondApiResponse) {
