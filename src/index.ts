@@ -38,79 +38,56 @@ const promises = [
 const p = Promise.all(promises);
 
 class AirQualityData {
-    constructor(dataSnapshots, location) {
+    constructor(dataSnapshots: Array<any>, location: AirQualityDataLocation) {
         this.dataSnapshots = dataSnapshots;
         this.location = location;
     }
 
-    // location = {}
-    // dataSnapshots = []
+    public dataSnapshots: Array<any>;
+    public location: AirQualityDataLocation;
 
-    dataSnapshots: any;
-    location: AirQualityDataLocation;
 }
 
 class AirQualityDataLocation {
-    constructor(lat: number, lng: number, country: string, placeId: number) {
-        this.lat = lat;
-        this.lng = lng;
-        this.country = country;
-        this.placeId = placeId;
-
-    }
-    lat:number;
-    lng:number;
-    country:string;
-    placeId:number;
+    // constructor(lat: number, lng: number, country: string, placeId: string | number) {
+    //     this.lat = lat;
+    //     this.lng = lng;
+    //     this.country = country;
+    //     this.placeId = placeId;
+    //
+    // }
+    public lat: number | undefined;
+    public lng?: number; // SHORTCUT: Equivalent of NUMBER | UNDEFINED
+    public country?: string;
+    public placeId?: string | number; // Union Type
 }
 
-function getAirQualityDataSnapshot(firstApiResponse, secondApiResponse) {
+type DataLocation = {
+    latitude?: string,
+    longitude?: string,
+    country?: string,
+    id?: number,
+    // miaFunction(location: DataLocation): number;
+}
 
-    if (promisesResult[0] instanceof Array) {
-        return firstApiResponse.map((singleResult, index) => {
-            const values = [...singleResult.sensorsdatavalues, ...secondApiResponse[index].sensorsdatavalues];
-            const timeStamp = singleResult.timestamp;
+function getAirQualityDataSnapshot(firstApiResponse: Array<any>, secondApiResponse: Array<any>) {
 
-            return {
-                values,
-                timeStamp
-            }
+    return firstApiResponse.map((singleResult, index) => {
+        const values = [...singleResult.sensorsdatavalues, ...secondApiResponse[index].sensorsdatavalues];
+        const timeStamp = singleResult.timestamp;
 
-        });
-    }
-    throw new Error('Not an instance of  Array');
+        return {
+            values,
+            timeStamp
+        }
+
+    });
 }
 
 function mapToAirQualityData(promisesResult) {
 
     const firstApiResponse = promisesResult[0];
     const secondApiResponse = promisesResult[1];
-
-
-    function getAirQualityDataLocation({latitude, longitude, country, id}) {
-        if (typeof latitude === 'string' &&
-            typeof longitude === 'string' &&
-            typeof country === 'string' &&
-            typeof id === 'number') {
-
-            const lat = Number.parseFloat(latitude);
-            const lng = Number.parseFloat(longitude);
-
-            if (isNaN(lat) || isNaN(lng)) {
-                throw new Error('Are you serious???')
-            }
-
-            return new AirQualityDataLocation(
-                latitude,
-                longitude,
-                country,
-                id
-            );
-        }
-
-        throw new Error('Not an object');
-
-    }
 
     const location = getAirQualityDataLocation(firstApiResponse[0].location);
     const dataSnapshots = getAirQualityDataSnapshot(firstApiResponse, secondApiResponse);
@@ -120,6 +97,25 @@ function mapToAirQualityData(promisesResult) {
 }
 
 p.then(mapToAirQualityData);
+
+const getAirQualityDataLocation = function({latitude, longitude, country, id}: DataLocation): AirQualityDataLocation {
+
+    const lat = latitude ? Number.parseFloat(latitude) : 0;
+    const lng = longitude ? Number.parseFloat(longitude) : 0;
+
+    if (isNaN(lat) || isNaN(lng)) {
+        throw new Error('Are you serious???')
+    }
+
+    const airQualityDataLocation = new AirQualityDataLocation();
+    airQualityDataLocation.lat = lat;
+    airQualityDataLocation.lng = lng;
+    airQualityDataLocation.country = country;
+    airQualityDataLocation.placeId = id;
+
+    return airQualityDataLocation;
+
+}
 
 function showData(data) {
 
