@@ -1,4 +1,4 @@
-/* async function mockGetAirQualityData(url){
+/* async function mockGetAirQualityData(url: string){
 
       const sensor_71550 = '[{}]';
       const sensor_71551 = '[{}]';
@@ -21,7 +21,9 @@
 
     }*/
 
-async function getAirQualityData(url) {
+import {DataLocation, RawAirQualityData, SensorDataValue} from "./types";
+
+async function getAirQualityData(url:string): Promise<Array<RawAirQualityData>>{
     const response = await fetch(url);
     const status = response.ok
     if (status) {
@@ -30,7 +32,7 @@ async function getAirQualityData(url) {
     throw new Error('Data not valid');
 }
 
-const promises = [
+const promises: Array<Promise<Array<RawAirQualityData>>> = [
     getAirQualityData('https://data.sensor.community/airrohr/v1/sensor/71550/'),
     getAirQualityData('https://data.sensor.community/airrohr/v1/sensor/71550/')
 ];
@@ -38,12 +40,12 @@ const promises = [
 const p = Promise.all(promises);
 
 class AirQualityData {
-    constructor(dataSnapshots: Array<any>, location: AirQualityDataLocation) {
+    constructor(dataSnapshots: Array<DataSnapshot>, location: AirQualityDataLocation) {
         this.dataSnapshots = dataSnapshots;
         this.location = location;
     }
 
-    public dataSnapshots: Array<any>;
+    public dataSnapshots: Array<DataSnapshot>;
     public location: AirQualityDataLocation;
 
 }
@@ -62,15 +64,14 @@ class AirQualityDataLocation {
     public placeId?: string | number; // Union Type
 }
 
-type DataLocation = {
-    latitude?: string,
-    longitude?: string,
-    country?: string,
-    id?: number,
-    // miaFunction(location: DataLocation): number;
+type DataSnapshot = {
+    values: Array<SensorDataValue>,
+    timeStamp: Date
 }
 
-function getAirQualityDataSnapshot(firstApiResponse: Array<any>, secondApiResponse: Array<any>) {
+function getAirQualityDataSnapshot(
+    firstApiResponse: Array<RawAirQualityData>,
+    secondApiResponse: Array<RawAirQualityData>):Array<DataSnapshot> {
 
     return firstApiResponse.map((singleResult, index) => {
         const values = [...singleResult.sensorsdatavalues, ...secondApiResponse[index].sensorsdatavalues];
@@ -84,14 +85,14 @@ function getAirQualityDataSnapshot(firstApiResponse: Array<any>, secondApiRespon
     });
 }
 
-function mapToAirQualityData(promisesResult) {
+function mapToAirQualityData(promisesResult: Array<Array<RawAirQualityData>>) {
 
-    const firstApiResponse = promisesResult[0];
-    const secondApiResponse = promisesResult[1];
+    const firstApiResponse: Array<RawAirQualityData> = promisesResult[0];
+    const secondApiResponse: Array<RawAirQualityData> = promisesResult[1];
 
-    const location = getAirQualityDataLocation(firstApiResponse[0].location);
-    const dataSnapshots = getAirQualityDataSnapshot(firstApiResponse, secondApiResponse);
-    const data = new AirQualityData(dataSnapshots, location);
+    const location: AirQualityDataLocation = getAirQualityDataLocation(firstApiResponse[0].location);
+    const dataSnapshots: Array<DataSnapshot> = getAirQualityDataSnapshot(firstApiResponse, secondApiResponse);
+    const data: AirQualityData = new AirQualityData(dataSnapshots, location);
 
     showData(data);
 }
@@ -117,18 +118,14 @@ const getAirQualityDataLocation = function({latitude, longitude, country, id}: D
 
 }
 
-function showData(data) {
+function showData(data: AirQualityData) {
 
-    if (!(data instanceof AirQualityData)) {
-        throw new Error('Wrong type');
-    }
-
-    const mapContainer = document.querySelector('.map');
-    const lat = data.location.lat;
-    const lng = data.location.lng;
+    const mapContainer: HTMLDivElement | null = document.querySelector('.map')!; // ( ! ) non e nullabile
+    const lat = data.location.lat ?? 0;
+    const lng = data.location.lng ?? 0;
     mapContainer.innerHTML = getMap({width: 450, height: 250}, lat, lng, 16)
 
-    const getLocation = (placeId, countryCode) => {
+    const getLocation = (placeId: number, countryCode: string) => {
 
         let city = '';
         let country = '';
@@ -144,10 +141,11 @@ function showData(data) {
         return `${city} (${country})`;
     }
 
-    const locationNameContainer = document.querySelector('.air-quality-item-mapContainer .card-title');
-    locationNameContainer.innerHTML = getLocation(data.location.placeId, data.location.country);
+    const locationNameContainer: HTMLDivElement = document.querySelector('.air-quality-item-mapContainer .card-title')!;
+    const placeId: number | undefined = typeof data.location.placeId === "string" ? Number.parseInt(data.location.placeId) : data.location.placeId:
+    locationNameContainer.innerHTML = getLocation(placeId ?? 0, data.location.country ?? "IT");
 
-    const snapShotsContainer = document.querySelector('.air-quality-item-mapContainer .card-body');
+    const snapShotsContainer = document.querySelector('.air-quality-item-mapContainer .card-body')!;
 
     data.dataSnapshots.forEach((snapshot) => {
         const snapshotElement = getSnapshot(snapshot);
@@ -156,9 +154,9 @@ function showData(data) {
 
 }
 
-function getMap({width = 450, height = 250}, lat, lng, zoom > 18);
+function getMap({width = 450, height = 250}, lat:number, lng: number): any;
 
-function getSnapshot(snapshot) {
+function getSnapshot(snapshot: DataSnapshot):HTMLDivElement {
 
     const snapshotElement = document.createElement('div');
     snapshotElement.className = 'snapshot-data card mt-3';
@@ -168,14 +166,16 @@ function getSnapshot(snapshot) {
         let value = 0;
         let type = '';
 
+        let v1: number = v.value ? Number.parseInt(v.value) : 0;
+
         switch (v.value_type) {
             case 'humidity':
                 type = 'Umidita';
-                value = `${Math.round(v.value)}%`;
+                value = `${Math.round(v1)}%`;
                 break;
             case 'temperature':
                 type = 'Temperatura';
-                value = `${Math.round(v.value)}C`;
+                value = `${Math.round(v1)}C`;
                 break;
             case 'P1':
                 type = 'PM10';
